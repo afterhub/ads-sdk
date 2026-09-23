@@ -1,6 +1,6 @@
 {
   "name": "@afterhub/ads-sdk",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Browser embed for the After Ads network: one async tag, placements declared in HTML.",
   "type": "module",
   "private": true,
@@ -13,8 +13,10 @@
     "test": "node --test test/*.test.ts"
   },
   "devDependencies": {
+    "@types/jsdom": "^30.0.0",
     "@types/node": "^24.13.6",
     "esbuild": "^0.28.2",
+    "jsdom": "^30.1.1",
     "typescript": "^7.0.2"
   }
 }
