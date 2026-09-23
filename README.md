@@ -31,12 +31,16 @@ Both IDs are public. They are not secrets.
 For single-page apps that add or remove placements after load:
 
 ```js
-window.AfterAds.mount(el);   // claim a placement
-window.AfterAds.refresh(el); // request a new ad
-window.AfterAds.destroy(el); // empty it; it can be mounted again
+const ads = await window.AfterAds.ready();
+const slot = ads.mount('#sidebar', { placement: 'PLACEMENT_ID' });
+
+slot?.refresh(); // request a new ad
+slot?.destroy(); // empty it; it can be mounted again
 ```
 
-Each call returns `true` if it did something, `false` otherwise.
+`mount` accepts a selector or an element. The placement ID defaults to the element's `data-ads-placement`. It returns `null` if the target is missing, has no placement ID, or is already mounted.
+
+In an SPA, destroy slots when the view unmounts so observers do not leak across navigations.
 
 ## Development
 
