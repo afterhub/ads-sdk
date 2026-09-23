@@ -1,0 +1,20 @@
+{
+  "name": "@afterhub/ads-sdk",
+  "version": "0.0.1",
+  "description": "Browser embed for the After Ads network: one async tag, placements declared in HTML.",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "esbuild src/main.ts --bundle --minify --format=iife --target=es2019 --define:__VERSION__=\\\"$npm_package_version\\\" --outfile=dist/ads.js",
+    "check": "tsc --noEmit",
+    "test": "node --test test/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.6",
+    "esbuild": "^0.28.2",
+    "typescript": "^7.0.2"
+  }
+}
