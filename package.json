@@ -1,6 +1,6 @@
 {
   "name": "@afterhub/ads-sdk",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Browser embed for the After Ads network: one async tag, placements declared in HTML.",
   "type": "module",
   "private": true,
