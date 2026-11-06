@@ -1,3 +1,4 @@
+import { DEV, diagnose } from './dev.ts';
 import { render } from './render.ts';
 import { beacon, decide, type Event, type Fill, type SlotRequest } from './transport.ts';
 import { viewabilityTimer, type Clock } from './viewability.ts';
@@ -28,6 +29,14 @@ export interface AfterAds {
   ready(): Promise<AfterAds>;
   /** Claim a placement. Returns null if the target is missing, has no IDs, or is already mounted. */
   mount(target: string | Element, options?: MountOptions): Slot | null;
+  /**
+   * Consent for optional tracking features, from the host's consent manager.
+   * Off until granted. Nothing the SDK does today needs it: it sets no cookie
+   * and sends no identifier, and the events it sends are needed for billing.
+   */
+  consent(granted: boolean): void;
+  /** Whether optional tracking features may run. */
+  readonly consented: boolean;
 }
 
 export interface Intersection {
@@ -56,7 +65,8 @@ function guarded<A extends unknown[], R>(fallback: R, fn: (...args: A) => R): (.
   return (...args) => {
     try {
       return fn(...args);
-    } catch {
+    } catch (error) {
+      if (DEV) diagnose('swallowed an error so the host page never sees it', error);
       return fallback;
     }
   };
@@ -76,6 +86,7 @@ export function createAds(env: Env): AfterAds {
   const mounted = new Map<Element, State>();
   let queue: Array<{ state: State; generation: number }> = [];
   let flushScheduled = false;
+  let consented = false;
 
   const teardown = (state: State) => {
     state.generation++;
@@ -88,7 +99,14 @@ export function createAds(env: Env): AfterAds {
   const show = (state: State, fill: Fill) => {
     const image = render(state.element, fill.creative, env.doc);
 
-    image.addEventListener('error', () => teardown(state), { once: true });
+    image.addEventListener(
+      'error',
+      () => {
+        if (DEV) diagnose(`creative image failed to load for placement ${state.placement}`, fill.creative.image);
+        teardown(state);
+      },
+      { once: true },
+    );
     image.addEventListener(
       'load',
       guarded(undefined, () => {
@@ -133,8 +151,15 @@ export function createAds(env: Env): AfterAds {
         .then((decisions) => {
           for (const { state, generation } of items) {
             const decision = decisions.get(state.placement);
-            if (decision?.fill && state.generation === generation && mounted.get(state.element) === state) {
+            const current = state.generation === generation && mounted.get(state.element) === state;
+            if (decision?.fill && current) {
               guarded(undefined, show)(state, decision);
+            } else if (DEV && current) {
+              diagnose(
+                decision
+                  ? `no fill for placement ${state.placement}`
+                  : `no decision for placement ${state.placement}: request failed, or the placement is not on website ${website}`,
+              );
             }
           }
         })
@@ -176,13 +201,31 @@ export function createAds(env: Env): AfterAds {
 
     ready: () => Promise.resolve(ads),
 
+    get consented() {
+      return consented;
+    },
+
+    consent: guarded(undefined, (granted: boolean) => {
+      consented = granted === true;
+    }),
+
     mount: guarded(null, (target: string | Element, options: MountOptions = {}): Slot | null => {
       const element = typeof target === 'string' ? env.doc.querySelector(target) : target;
-      if (!element || mounted.has(element)) return null;
+      if (!element) {
+        if (DEV) diagnose('mount target not found', target);
+        return null;
+      }
+      if (mounted.has(element)) {
+        if (DEV) diagnose('already mounted; destroy() it first to mount again', element);
+        return null;
+      }
 
       const placement = options.placement ?? element.getAttribute('data-ads-placement');
       const website = options.website ?? element.getAttribute('data-ads-website');
-      if (!placement || !website) return null;
+      if (!placement || !website) {
+        if (DEV) diagnose('slot needs both data-ads-website and data-ads-placement', element);
+        return null;
+      }
 
       const state: State = { element, placement, website, generation: 0, cleanups: [] };
       mounted.set(element, state);
