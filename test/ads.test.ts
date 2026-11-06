@@ -171,3 +171,17 @@ test('ready resolves to the same instance', async () => {
   const t = setup();
   assert.equal(await t.ads.ready(), t.ads);
 });
+
+test('consent is off until the host grants it, and can be withdrawn', () => {
+  const { ads } = setup();
+  assert.equal(ads.consented, false);
+
+  ads.consent(true);
+  assert.equal(ads.consented, true);
+
+  ads.consent(false);
+  assert.equal(ads.consented, false);
+
+  ads.consent('yes' as unknown as boolean);
+  assert.equal(ads.consented, false);
+});

@@ -49,6 +49,20 @@ slot?.destroy(); // empty it and stop observing; it can be mounted again
 
 In an SPA, destroy slots when the view unmounts so observers do not leak across navigations.
 
+### Consent
+
+```js
+ads.consent(true);  // from your consent manager, once the visitor agrees
+ads.consent(false); // withdrawn
+ads.consented;      // false until granted
+```
+
+The SDK sets no cookie and sends no identifier, and the events it sends today are needed for billing, so ads run the same with or without consent. The hook exists so optional tracking features stay off until you grant it. Anything but `true` counts as not granted.
+
+## Diagnostics
+
+`npm run build:dev` writes `dist/ads.dev.js`, an unminified build that logs to the console (prefixed `[AfterAds]`) why a slot stayed empty: a missing ID, a double mount, a no-fill, a failed request, an image that did not load, or an error the SDK swallowed. The production build (`npm run build`) contains none of it; `test/bundle.test.ts` checks that.
+
 ## Development
 
 Requires Node 24 (tests run TypeScript directly).
@@ -58,4 +72,5 @@ npm install
 npm test          # node --test
 npm run check     # tsc
 npm run build     # dist/ads.js
+npm run build:dev # dist/ads.dev.js, with diagnostics
 ```

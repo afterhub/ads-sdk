@@ -8,7 +8,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "esbuild src/main.ts --bundle --minify --format=iife --target=es2019 --define:__VERSION__=\\\"$npm_package_version\\\" --outfile=dist/ads.js",
+    "build": "esbuild src/main.ts --bundle --minify --format=iife --target=es2019 --define:__VERSION__=\\\"$npm_package_version\\\" --define:__DEV__=false --outfile=dist/ads.js",
+    "build:dev": "esbuild src/main.ts --bundle --format=iife --target=es2019 --define:__VERSION__=\\\"$npm_package_version-dev\\\" --define:__DEV__=true --outfile=dist/ads.dev.js",
     "check": "tsc --noEmit",
     "test": "node --test test/*.test.ts"
   },
